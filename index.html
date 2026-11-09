@@ -129,6 +129,10 @@ button{font-family:inherit}
 .nickline{pointer-events:none;font-size:16px;color:var(--cream2);text-shadow:2px 2px 0 var(--ink)}
 .nickline b{color:var(--yellow);font-weight:400}
 .gone{display:none!important}
+#title .row{flex-wrap:nowrap}
+#nickEdit{font-family:var(--ko);font-size:18px;letter-spacing:0;line-height:1.25}
+#title .row .pxbtn{min-width:150px;justify-content:center;text-align:center}
+@media (max-width:420px){#title .row{gap:12px}#title .row .pxbtn{min-width:0;width:calc(50vw - 34px);padding-left:.4em;padding-right:.4em}}
 .nickrow .linkbtn{font-size:15px;padding:4px 10px}
 .rankbox{pointer-events:auto;padding:10px 12px;width:min(calc(100vw - 40px),340px)}
 #rankBox{margin-bottom:10px;padding:6px 10px 8px;width:min(calc(100vw - 48px),270px)}
@@ -244,7 +248,7 @@ button{font-family:inherit}
       <div class="nickline">👤 <b id="nickV">닉네임 없음</b></div>
       <div class="row">
         <button id="startBtn" class="pxbtn yellow big pulse">▶ START</button>
-        <button id="nickEdit" class="linkbtn">✎ 닉네임 수정</button>
+        <button id="nickEdit" class="pxbtn big">닉네임 변경</button>
         <button id="quickBtn" class="linkbtn gone" aria-hidden="true" tabindex="-1">오프닝 건너뛰기</button>
       </div>
     </div>
@@ -1000,7 +1004,7 @@ function bossUpdate(B, dt, quiet) {
           C.sx = g.x + dx * Math.cos(a0) - dy * Math.sin(a0); C.sy = g.y + dx * Math.sin(a0) + dy * Math.cos(a0); C.a0 = a0; C.mode = 'free'; C.fx = C.sx; C.fy = C.sy;
         }
         const u = (t - T0) / T1; const px = C.fx, py = C.fy;
-        C.fx = C.sx + Math.sin(u * PI) * 40; C.fy = C.sy - (B.tossH || 420) * 4 * u * (1 - u);
+        C.fx = C.sx + Math.sin(u * PI) * 95;   // arc out to his right so the spinning blade never crosses his face C.fy = C.sy - (B.tossH || 420) * 4 * u * (1 - u);
         C.vx = (C.fx - px) / Math.max(dt, 1e-3); C.vy = (C.fy - py) / Math.max(dt, 1e-3);
         C.ang = C.a0 + u * TAU * 3;
       } else {
@@ -1015,7 +1019,8 @@ function bossUpdate(B, dt, quiet) {
   if (B.action !== 'point') B.lean = lerp(B.lean, 0, k);
   if (B.action !== 'laugh' && B.action !== 'raise') B.belly = lerp(B.belly, 0, k);
   if (B.action !== 'thumbs' && !B.walking) B.hop = lerp(B.hop || 0, 0, k);
-  B.fa = lerp(B.fa || 0, fa, Math.min(1, dt * 14));
+  // the forearm only sways a little around the elbow: bigger turns pull it out of the sleeve
+  B.fa = lerp(B.fa || 0, clamp(fa * 0.25, -0.08, 0.1), Math.min(1, dt * 14));
   B.blinkT -= dt; if (B.blinkT < 0) { B.blink = true; if (B.blinkT < -0.12) { B.blink = false; B.blinkT = rand(1.8, 4); } }
   B.mouth = B.talking ? 0.25 + 0.75 * Math.abs(Math.sin(B.t * 15)) : lerp(B.mouth, 0, k);
 }
