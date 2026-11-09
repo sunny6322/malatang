@@ -1778,7 +1778,8 @@ function onoInSpace(c, text, base, bx, by, s, band, colors, outline) {
   const tw = best.size * per; const room = best.x1 - best.x0;
   const x = best.left ? Math.max(pad + tw / 2, best.x1 - tw / 2) : Math.min(W - pad - tw / 2, best.x0 + tw / 2);   // hug the head side of the free area
   // if the bigger text no longer fits beside the head, lift it to forehead height so it doesn't cover his face
-  const y = Math.max(band + best.size * 0.8, tw > room + 2 ? Math.min(headY, by - 455 * k - best.size * 0.2) : headY);
+  // if the text no longer fits beside the head, put it fully above his hair so it never touches him
+  const y = Math.max(band + best.size * 0.75, tw > room + 2 ? by - 480 * k - best.size * 0.7 : headY);
   fancyText(c, text, x, y, best.size, colors, outline);
 }
 function drawIntro(t) {
