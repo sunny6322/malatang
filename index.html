@@ -1750,6 +1750,16 @@ function introTextBand() { const { W, H } = L; const sw = Math.min(W * 0.84, 560
 /* put an onomatopoeia right beside Wang Fu's head, in the free space on the left of it
    (the cleaver works on his right), or past the cleaver's reach on the right when that is
    roomier; the text shrinks to fit instead of covering him, the sign or the dialog */
+const isPhone = () => Math.min(L.W, L.H) < 600;
+/* on phones every intro word (빙글빙글 / 슈웅 / 챙 / 등장) uses the same size:
+   what fits beside his head for '빙글빙글~', enlarged by 1.25 twice */
+function phoneWordSize(c, base, bx, s) {
+  const { W } = L; const pad = 8; const k = s * 0.9;
+  c.save(); c.font = `900 100px ${FONT}`; const per = (c.measureText('빙글빙글~').width + 30) / 100; c.restore();
+  const room = Math.max(bx - 118 * k - pad, W - pad - (bx + 300 * k));
+  const fit = Math.min(base, room / per, 150 * k / 1.4);
+  return Math.max(14, fit * 1.25 * 1.25);
+}
 function onoInSpace(c, text, base, bx, by, s, band, colors, outline) {
   const { W } = L; const pad = 8; const k = s * 0.9;          // drawBoss draws sprite units at s*0.9
   const headY = by - 400 * k;                                   // middle of his head
@@ -1763,9 +1773,12 @@ function onoInSpace(c, text, base, bx, by, s, band, colors, outline) {
   if (!best || best.size < 11) {                                // no room beside the head: just above it, small
     const size = Math.min(base * 0.8, (W - pad * 2) / per); fancyText(c, text, bx - 30 * k, Math.max(band + size, by - 500 * k - size * 0.6), size, colors, outline); return;
   }
-  const tw = best.size * per;
-  const x = best.left ? best.x1 - tw / 2 : best.x0 + tw / 2;   // hug the head side of the free area
-  const y = Math.max(band + best.size * 0.8, headY);
+  const mobile = isPhone();
+  if (mobile) best.size = Math.min(phoneWordSize(c, base, bx, s), (W - pad * 2) / per);   // one shared, bigger size on phones
+  const tw = best.size * per; const room = best.x1 - best.x0;
+  const x = best.left ? Math.max(pad + tw / 2, best.x1 - tw / 2) : Math.min(W - pad - tw / 2, best.x0 + tw / 2);   // hug the head side of the free area
+  // if the bigger text no longer fits beside the head, lift it to forehead height so it doesn't cover his face
+  const y = Math.max(band + best.size * 0.8, tw > room + 2 ? Math.min(headY, by - 455 * k - best.size * 0.2) : headY);
   fancyText(c, text, x, y, best.size, colors, outline);
 }
 function drawIntro(t) {
@@ -1778,10 +1791,10 @@ function drawIntro(t) {
   else if (IN.phase === 'enter') { const u = clamp(IN.enterT / 1.0, 0, 1); bx = lerp(W + 200 * lay.s, lay.x, easeOut(u)); by -= Math.abs(Math.sin(IN.enterT * PI * 4)) * 26 * lay.s * (1 - u); }
   if (IN.phase !== 'open') drawBoss(c, bx, by, lay.s, B);
   const band = introTextBand(); const wsz = clamp(Math.min(W, H) * 0.07, 22, 44);
-  if (IN.phase === 'enter' && IN.enterT > 1.0 && IN.enterT < 1.4) fancyText(c, '등장!', W < H ? W * 0.3 : bx + 140 * lay.s, W < H ? Math.max(band + wsz, by - 470 * lay.s) : by - 440 * lay.s, wsz * 1.1, ['#fff3d6', '#f6d34a'], '#5a1206', { clamp: true, minY: band });
+  if (IN.phase === 'enter' && IN.enterT > 1.0 && IN.enterT < 1.4) fancyText(c, '등장!', W < H ? W * 0.3 : bx + 140 * lay.s, W < H ? Math.max(band + wsz, by - 470 * lay.s) : by - 440 * lay.s, isPhone() ? phoneWordSize(c, wsz, lay.x, lay.s) : wsz * 1.1, ['#fff3d6', '#f6d34a'], '#5a1206', { clamp: true, minY: band });
   for (const f of IN.fx) {
     const p = f.t / f.life;
-    if (f.word) { c.globalAlpha = 1 - Math.max(0, p - 0.6) / 0.4; fancyText(c, f.word, f.x, f.y - p * 20, wsz * 1.15, ['#ffffff', '#9ff0ff'], '#0a2a4a', { clamp: true, minY: band }); c.globalAlpha = 1; }
+    if (f.word) { c.globalAlpha = 1 - Math.max(0, p - 0.6) / 0.4; fancyText(c, f.word, f.x, f.y - p * 20, isPhone() ? phoneWordSize(c, wsz, lay.x, lay.s) : wsz * 1.15, ['#ffffff', '#9ff0ff'], '#0a2a4a', { clamp: true, minY: band }); c.globalAlpha = 1; }
     else { c.globalAlpha = 1 - p; c.fillStyle = f.color; const s = snap(f.size); c.fillRect(snap(f.x - s), snap(f.y), s * 2, L.P); c.fillRect(snap(f.x), snap(f.y - s), L.P, s * 2); c.globalAlpha = 1; }
   }
   if (B && B.action === 'spin') onoInSpace(c, '빙글빙글~', wsz, bx, by, lay.s, band, ['#ffffff', '#f6d34a'], '#5a1206');
