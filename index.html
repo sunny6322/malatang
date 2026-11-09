@@ -128,8 +128,26 @@ button{font-family:inherit}
 .nickrow b{color:var(--yellow);font-weight:400}
 .nickrow .linkbtn{font-size:15px;padding:4px 10px}
 .rankbox{pointer-events:auto;padding:10px 12px;width:min(calc(100vw - 40px),340px)}
-#rankBox{margin-bottom:16px}
-@media (min-width:900px) and (min-height:520px){#rankBox{position:absolute;left:max(28px,env(safe-area-inset-left));top:50%;transform:translateY(-45%);margin:0;width:300px}}
+#rankBox{margin-bottom:10px;padding:6px 10px 8px;width:min(calc(100vw - 48px),270px)}
+#rankBox .rk-head{margin-bottom:4px}
+#rankBox .rk-t{font-size:15px}
+#rankBox .rk-mode{font-size:11px}
+#rankBox .rk-list{gap:2px;min-height:0}
+#rankBox .rk{grid-template-columns:22px 1fr auto;gap:6px;padding:1px 6px;font-size:14px;border-width:1px;text-shadow:1px 1px 0 var(--ink)}
+#rankBox .rk .no,#rankBox .rk .sc{font-size:12px}
+#rankBox .rk-empty{font-size:13px;padding:4px 2px}
+#title #titleBottom{gap:10px}
+#title .nickrow{font-size:15px;padding:3px 6px 3px 10px;gap:8px}
+#title .nickrow .linkbtn{font-size:13px;padding:3px 8px}
+@media (max-height:720px) and (max-width:899px){
+  #rankBox{padding:4px 8px 6px;width:min(calc(100vw - 48px),240px);margin-bottom:6px}
+  #rankBox .rk-t{font-size:13px}#rankBox .rk-mode{font-size:10px}
+  #rankBox .rk{font-size:12px;padding:0 6px;line-height:1.35}
+  #rankBox .rk .no,#rankBox .rk .sc{font-size:11px}
+  #title #titleBottom{gap:6px}
+  #title .nickrow{font-size:13px;padding:2px 4px 2px 8px}#title .nickrow .linkbtn{font-size:12px;padding:2px 6px}
+}
+@media (min-width:900px) and (min-height:520px){#rankBox{position:absolute;left:max(28px,env(safe-area-inset-left));top:50%;transform:translateY(-45%);margin:0;width:250px}}
 .rk-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
 .rk-t{font-size:20px;color:var(--yellow);text-shadow:2px 2px 0 var(--ink)}
 .rk-mode{font-size:13px;color:var(--cream);text-align:right;line-height:1.25}
@@ -1601,7 +1619,7 @@ function logoBottom() { const m = logoMetrics(); return m.y + m.s1 * 0.6 + m.s2 
 function titleBlockTop() {
   const rb = $('rankBox'), tb = $('titleBottom'); if (!tb) return L.H * 0.77;
   const wide = getComputedStyle(rb).position === 'absolute';
-  return (wide ? tb : rb).getBoundingClientRect().top - (wide ? 0 : 8);
+  return (wide ? tb : rb).getBoundingClientRect().top - 4;
 }
 function drawLogo(c, t) {
   const { W, H } = L; const y = Math.max(H * 0.1, 70); const bw = Math.min(W * 0.94, 760);
@@ -1619,11 +1637,16 @@ function drawTitle(t, dt) {
   drawSteam(c);
   const B = TB.boss; bossUpdate(B, dt, true);
   const lb = logoBottom(); const blockTop = titleBlockTop();
-  const s = Math.max(0.25, Math.min(H * 0.44 / 420, W * 0.8 / 470, (blockTop - lb - 8) / 430)); const bx = W / 2, by = Math.min(H * 0.77, blockTop - 4);
-  // ingredients orbiting around Wang Fu like the reference
+  // Wang Fu fills the gap between the logo and the buttons/ranking without touching either
+  const BH = 500; const by = blockTop - 6;
+  const s = Math.max(0.25, Math.min((by - lb - 4) / BH, W * 0.92 / 470, H * 0.62 / 420));
+  // keep the orbiting ingredients clear of the logo, the screen edges and the side ranking box
+  const rb = $('rankBox'); const rbR = rb && getComputedStyle(rb).position === 'absolute' ? rb.getBoundingClientRect().right : 0;
+  const isz = Math.min(L.base * 0.75, 150 * s);
+  const rxMax = Math.min(W / 2 - isz / 2 - 6, rbR ? W / 2 - rbR - isz / 2 - 12 : Infinity);
   const items = TYPES.map((tp, i) => { const a = i / TYPES.length * TAU + t * 0.35; return { tp, a, z: Math.sin(a) }; }).sort((a, b) => a.z - b.z);
-  const rx = Math.min(W * 0.42, 300 * s * 1.6), ry = 120 * s, cy = by - 230 * s;
-  const drawOne = o => { const sp = SPR[o.tp.key]; const sz = L.base * 0.75 * (0.85 + 0.15 * o.z); const sc = sz / sp.max; const x = bx + Math.cos(o.a) * rx, y = cy + o.z * ry + Math.sin(t * 2 + o.a) * 6;
+  const bx = W / 2; const rx = Math.max(60 * s, Math.min(300 * s * 1.6, rxMax)), ry = 120 * s, cy = by - 230 * s;
+  const drawOne = o => { const sp = SPR[o.tp.key]; const sz = isz * (0.85 + 0.15 * o.z); const sc = sz / sp.max; const x = bx + Math.cos(o.a) * rx, y = cy + o.z * ry + Math.sin(t * 2 + o.a) * 6 * s;
     c.save(); c.translate(x, y); c.rotate(Math.sin(t + o.a) * 0.4); c.drawImage(sp.sh, -(sp.w / 2 + sp.pad) * sc, -(sp.h / 2 + sp.pad) * sc, (sp.w + sp.pad * 2) * sc, (sp.h + sp.pad * 2) * sc); c.restore(); };
   items.filter(o => o.z < 0).forEach(drawOne);
   drawBoss(c, bx, by, s, B);
@@ -1721,6 +1744,32 @@ function drawSign(c, t) {
 }
 function signTop() { const { W, H } = L; return W < H ? Math.max(68, H * 0.04) : Math.max(14, H * 0.04); }
 function introTextBand() { const { W, H } = L; const sw = Math.min(W * 0.84, 560), sh = Math.min(sw * 0.26, H * 0.13); return signTop() + sh + 6; }
+/* put an onomatopoeia in the biggest free area around Wang Fu (left, right, or above him),
+   shrinking the text so it fits that area instead of overlapping him, the sign or the dialog */
+function onoInSpace(c, text, base, bx, by, s, band, colors, outline, allowTop) {
+  const { W, H } = L; const pad = 10;
+  const dlg = $('dialog'); const bottom = dlg && !dlg.classList.contains('hidden') ? dlg.getBoundingClientRect().top - 30 : H - 16;
+  const bl = bx - 200 * s, br = bx + 235 * s;
+  c.save(); c.font = `900 100px ${FONT}`; const k = (c.measureText(text).width + 40) / 100; c.restore();   // width per 1px of font size
+  const areas = [
+    { x0: pad, x1: bl, y0: band, y1: bottom },
+    { x0: br, x1: W - pad, y0: band, y1: bottom },
+  ];
+  // above his head (for the toss only the left half: the cleaver flies up on his right)
+  areas.push({ x0: pad, x1: allowTop ? W - pad : bx - 20 * s, y0: band, y1: by - 480 * s });
+  // the floor under his feet, when the dialog box isn't covering it
+  areas.push({ x0: pad, x1: W - pad, y0: by + 16 * s, y1: bottom, low: true });
+  let best = null;
+  for (const a of areas) {
+    const w = a.x1 - a.x0, h = a.y1 - a.y0; if (w <= 0 || h <= 0) continue;
+    const size = Math.min(base, w / k, h / 1.6);
+    if (!best || size > best.size) best = { ...a, size };
+  }
+  if (!best || best.size < 12) return;   // nowhere free enough: skip rather than cover him
+  const x = (best.x0 + best.x1) / 2;
+  const y = best.low ? best.y0 + (best.y1 - best.y0) * 0.4 : clamp(by - 330 * s, best.y0 + best.size * 0.8, best.y1 - best.size * 0.8);
+  fancyText(c, text, x, y, best.size, colors, outline);
+}
 function drawIntro(t) {
   const { W, H } = L; const c = ctx; const B = IN.boss;
   c.drawImage(CACHE.kitchen.c, 0, 0, W, H);
@@ -1737,9 +1786,8 @@ function drawIntro(t) {
     if (f.word) { c.globalAlpha = 1 - Math.max(0, p - 0.6) / 0.4; fancyText(c, f.word, f.x, f.y - p * 20, wsz * 1.15, ['#ffffff', '#9ff0ff'], '#0a2a4a', { clamp: true, minY: band }); c.globalAlpha = 1; }
     else { c.globalAlpha = 1 - p; c.fillStyle = f.color; const s = snap(f.size); c.fillRect(snap(f.x - s), snap(f.y), s * 2, L.P); c.fillRect(snap(f.x), snap(f.y - s), L.P, s * 2); c.globalAlpha = 1; }
   }
-  const headY = by - 470 * lay.s;
-  if (B && B.action === 'spin') fancyText(c, '빙글빙글~', W < H ? W * 0.3 : bx - 220 * lay.s, W < H ? Math.max(band + wsz, headY - wsz * 0.2) : headY, wsz, ['#ffffff', '#f6d34a'], '#5a1206', { clamp: true, minY: band });
-  if (B && B.action === 'toss' && B.actT > 0.28 && B.actT < 1.6) fancyText(c, '슈웅~!', W < H ? W * 0.28 : bx - 60 * lay.s, W < H ? Math.max(band + wsz, headY - wsz * 0.2) : by - 560 * lay.s, wsz * 1.1, ['#ffffff', '#9ff0ff'], '#0a2a4a', { clamp: true, minY: band });
+  if (B && B.action === 'spin') onoInSpace(c, '빙글빙글~', wsz, bx, by, lay.s, band, ['#ffffff', '#f6d34a'], '#5a1206', true);
+  if (B && B.action === 'toss' && B.actT > 0.28 && B.actT < 1.6) onoInSpace(c, '슈웅~!', wsz * 1.1, bx, by, lay.s, band, ['#ffffff', '#9ff0ff'], '#0a2a4a', false);
   if (IN.icons.length) {
     const dlg = $('dialog').getBoundingClientRect(); const n = 7; const isz = Math.min(W / 8.2, 92); const y0 = dlg.top - isz * 0.72;
     IN.icons.forEach((ic, i) => {
@@ -1808,12 +1856,7 @@ const LocalBackend = {
     all[rec.pid] = { ...rec, achievedAt: Date.now() }; LS.set('wf_test_ranking', all); return { updated: true, best: rec.score };
   },
   async rename(pid, nick) { const all = this._all(); if (all[pid]) { all[pid].nick = nick; LS.set('wf_test_ranking', all); } },
-  async claimNick(pid, nick) {
-    const names = LS.get('wf_test_nicks', {}); const k = nickKey(nick);
-    if (names[k] && names[k] !== pid) throw NickTaken;
-    for (const key of Object.keys(names)) if (names[key] === pid && key !== k) delete names[key];
-    names[k] = pid; LS.set('wf_test_nicks', names); await this.rename(pid, nick);
-  },
+  async claimNick(pid, nick) { await this.rename(pid, nick); },   // duplicate nicknames are allowed
 };
 
 /* ---- Firebase backend ---- */
@@ -1845,21 +1888,12 @@ async function FirebaseBackend(cfg) {
         return { updated: true, best: rec.score };
       });
     },
+    /* duplicate nicknames are allowed: each player is told apart by uid */
     async rename(pid, nick) { return this.claimNick(pid, nick); },
     async claimNick(pid, nick) {
-      const nref = k => FS.doc(db, 'nicknames', k);
-      await FS.runTransaction(db, async tx => {
-        const k = nickKey(nick); const n = await tx.get(nref(k));
-        if (n.exists() && n.data().uid !== uid) throw NickTaken;
-        const me = await tx.get(ref(uid));
-        const oldNick = me.exists() ? me.data().nick : (Player.claimed || '');
-        const oldDoc = oldNick && nickKey(oldNick) !== k ? await tx.get(nref(nickKey(oldNick))) : null;
-        if (!n.exists()) tx.set(nref(k), { uid });
-        if (oldDoc && oldDoc.exists() && oldDoc.data().uid === uid) tx.delete(nref(nickKey(oldNick)));
-        if (me.exists() && me.data().nick !== nick) tx.update(ref(uid), { nick });
-      });
+      const me = await FS.getDoc(ref(uid));
+      if (me.exists() && me.data().nick !== nick) await FS.updateDoc(ref(uid), { nick });
     },
-    async nickOwner(nick) { const d = await FS.getDoc(FS.doc(db, 'nicknames', nickKey(nick))); return d.exists() ? d.data().uid : null; },
   };
 }
 
@@ -1925,12 +1959,8 @@ const Rank = {
     await withTimeout(this.be.claimNick(Player.pid, nick), 10000);
     Player.claimed = nick; LS.set('wf_claimed', nick);
   },
-  /* a nickname typed before going online may already belong to someone else */
-  async verifyNick() {
-    if (!this.be || !validNick(Player.nick)) return;
-    try { await this.claimNick(Player.nick); }
-    catch (e) { if (e && e.code === 'nick-taken') { const taken = Player.nick; Player.setNick(''); renderNick(); openNick(null, false, `'${taken}'은(는) 다른 사람이 이미 쓰는 닉네임이에요. 새 닉네임을 정해 주세요.`); } }
-  },
+  /* nicknames may repeat, so there is nothing to check after connecting */
+  async verifyNick() {},
 };
 
 const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1991,8 +2021,9 @@ async function confirmNick() {
   if (nickBusy || !validateNickUI()) return; const v = cleanNick($('nickInput').value);
   nickBusy = true; $('nickOk').disabled = true; $('nickOk').textContent = '확인 중…'; $('nickErr').textContent = '';
   try {
-    await Rank.claimNick(v);
-    Player.setNick(v); $('nickModal').classList.add('hidden'); renderNick(); Snd.click(); Rank.refresh();
+    Player.setNick(v); Rank.rename(v);   // no uniqueness check, so no need to wait for the network
+    Player.claimed = v; LS.set('wf_claimed', v);
+    $('nickModal').classList.add('hidden'); renderNick(); Snd.click(); Rank.refresh();
     const f = nickThen; nickThen = null; if (f) f();
   } catch (e) {
     if (!e || e.code !== 'nick-taken') console.error('닉네임 확인 실패', e);
