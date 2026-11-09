@@ -10,7 +10,7 @@
 <script>
 /* in-app browsers (KakaoTalk etc.) keep serving an old copy: if the site has a newer build, reload it */
 (function () {
-  var BUILD = '1109173251';
+  var BUILD = '1109173341';
   if (!/^https?:$/.test(location.protocol)) return;
   try {
     fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
@@ -1790,7 +1790,7 @@ function phoneWordSize(c, base, bx, s) {
   c.save(); c.font = `900 100px ${FONT}`; const per = (c.measureText('빙글빙글~').width + 30) / 100; c.restore();
   const room = Math.max(bx - 118 * k - pad, W - pad - (bx + 300 * k));
   const fit = Math.min(base, room / per, 150 * k / 1.4);
-  return Math.max(14, fit * 1.25 * 1.25);
+  return Math.max(12, fit * 1.25 * 1.25 * (2 / 3));   // enlarged twice, then trimmed by a third
 }
 function onoInSpace(c, text, base, bx, by, s, band, colors, outline) {
   const { W } = L; const pad = 8; const k = s * 0.9;          // drawBoss draws sprite units at s*0.9
