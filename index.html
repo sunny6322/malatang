@@ -996,7 +996,7 @@ function bossUpdate(B, dt, quiet) {
           C.sx = g.x + dx * Math.cos(a0) - dy * Math.sin(a0); C.sy = g.y + dx * Math.sin(a0) + dy * Math.cos(a0); C.a0 = a0; C.mode = 'free'; C.fx = C.sx; C.fy = C.sy;
         }
         const u = (t - T0) / T1; const px = C.fx, py = C.fy;
-        C.fx = C.sx + Math.sin(u * PI) * 40; C.fy = C.sy - 420 * 4 * u * (1 - u);
+        C.fx = C.sx + Math.sin(u * PI) * 40; C.fy = C.sy - (B.tossH || 420) * 4 * u * (1 - u);
         C.vx = (C.fx - px) / Math.max(dt, 1e-3); C.vy = (C.fy - py) / Math.max(dt, 1e-3);
         C.ang = C.a0 + u * TAU * 3;
       } else {
@@ -1669,8 +1669,10 @@ const LINES = [
 const ROLL = [['두부', ['tofu']], ['고기', ['beef']], ['중국당면', ['noodle']], ['분모자', ['bunmoja']], ['목이버섯', ['blackear', 'whiteear']], ['팽이버섯', ['enoki']]];
 const IN = { t: 0, line: -1, typed: 0, typeAcc: 0, boss: null, fx: [], icons: [], rollIdx: 0, phase: 'open' };
 function introLayout() {
-  const { W, H } = L; const s = Math.min(H * 0.58 / 420, W * 0.94 / 480);
-  return { s, x: clamp(W * 0.5 - 20 * s, 140 * s, W - 200 * s), y: H * 0.78 };
+  const { W, H } = L; const y = H * 0.78;
+  // the spinning cleaver reaches ~580 sprite units above his feet: keep that below the shop sign
+  const s = Math.min(H * 0.58 / 420, W * 0.94 / 480, (y - introTextBand() - 6) / (580 * 0.9));
+  return { s, x: clamp(W * 0.5 - 20 * s, 140 * s, W - 200 * s), y };
 }
 function startIntro() {
   state = 'intro'; Snd.init(); Snd.music('intro');
@@ -1704,6 +1706,7 @@ function nextLine() {
 }
 function updateIntro(dt) {
   IN.t += dt; const t = IN.t; const B = IN.boss;
+  { const lay = introLayout(); const k = lay.s * 0.9; B.tossH = clamp((lay.y - introTextBand() - 8) / k - 370 - 110, 90, 420); }
   if (!IN.gong1 && t > 0.55) { IN.gong1 = true; Snd.gongHit(0.9); Snd.drumHit(1); }
   if (IN.phase === 'open' && t > 1.2) { IN.phase = 'enter'; IN.enterT = 0; }
   if (IN.phase === 'enter') {
