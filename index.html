@@ -10,7 +10,7 @@
 <script>
 /* in-app browsers (KakaoTalk etc.) keep serving an old copy: if the site has a newer build, reload it */
 (function () {
-  var BUILD = '1109173341';
+  var BUILD = '1109173422';
   if (!/^https?:$/.test(location.protocol)) return;
   try {
     fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
@@ -152,9 +152,9 @@ button{font-family:inherit}
 .gone{display:none!important}
 #title .row{flex-wrap:nowrap}
 #nickEdit{font-family:var(--ko);letter-spacing:0;line-height:1.15;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding-top:.45em;padding-bottom:.45em}
-#nickEdit{background:#c8261a;box-shadow:inset -4px -4px 0 #8a1208,inset 4px 4px 0 #f0624a,0 0 0 3px var(--cream),0 0 0 6px var(--ink),0 7px 0 4px rgba(0,0,0,.4)}
-#nickEdit b{font-weight:400;font-size:18px;color:#fff3d6;text-shadow:2px 2px 0 #4a0a04;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
-#nickEdit small{font-size:12px;color:#f6d34a;opacity:1;white-space:nowrap}
+#nickEdit{background:#f6ecd2;box-shadow:inset -4px -4px 0 #d4c39c,inset 4px 4px 0 #fffaf0,0 0 0 3px var(--cream),0 0 0 6px var(--ink),0 7px 0 4px rgba(0,0,0,.4)}
+#nickEdit b{font-weight:400;font-size:18px;color:#2b1408;text-shadow:none;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+#nickEdit small{font-size:12px;color:#7a5a3a;opacity:1;white-space:nowrap}
 #title .row .pxbtn{min-width:150px;justify-content:center;text-align:center}
 @media (max-width:420px){#title .row{gap:12px}#title .row .pxbtn{min-width:0;width:calc(50vw - 34px);padding-left:.4em;padding-right:.4em}}
 .nickrow .linkbtn{font-size:15px;padding:4px 10px}
