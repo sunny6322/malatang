@@ -130,7 +130,9 @@ button{font-family:inherit}
 .nickline b{color:var(--yellow);font-weight:400}
 .gone{display:none!important}
 #title .row{flex-wrap:nowrap}
-#nickEdit{font-family:var(--ko);font-size:18px;letter-spacing:0;line-height:1.25}
+#nickEdit{font-family:var(--ko);letter-spacing:0;line-height:1.15;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding-top:.45em;padding-bottom:.45em}
+#nickEdit b{font-weight:400;font-size:18px;color:#7a1608;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+#nickEdit small{font-size:12px;color:var(--ink);opacity:.8;white-space:nowrap}
 #title .row .pxbtn{min-width:150px;justify-content:center;text-align:center}
 @media (max-width:420px){#title .row{gap:12px}#title .row .pxbtn{min-width:0;width:calc(50vw - 34px);padding-left:.4em;padding-right:.4em}}
 .nickrow .linkbtn{font-size:15px;padding:4px 10px}
@@ -245,10 +247,9 @@ button{font-family:inherit}
       <div class="rk-list" id="rkList"></div>
     </div>
     <div id="titleBottom">
-      <div class="nickline">👤 <b id="nickV">닉네임 없음</b></div>
       <div class="row">
         <button id="startBtn" class="pxbtn yellow big pulse">▶ START</button>
-        <button id="nickEdit" class="pxbtn big">닉네임 변경</button>
+        <button id="nickEdit" class="pxbtn big"><b id="nickV">닉네임 없음</b><small>✎ 닉네임 변경</small></button>
         <button id="quickBtn" class="linkbtn gone" aria-hidden="true" tabindex="-1">오프닝 건너뛰기</button>
       </div>
     </div>
