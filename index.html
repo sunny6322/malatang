@@ -1761,8 +1761,9 @@ function onoInSpace(c, text, base, bx, by, s, band, colors, outline) {
   let best = null;
   for (const a of sides) { const w = a.x1 - a.x0; if (w <= 0) continue; const size = Math.min(base, w / per, 150 * k / 1.4); if (!best || size > best.size) best = { ...a, size }; }
   if (!best || best.size < 11) {                                // no room beside the head: just above it, small
-    const size = Math.min(base * 0.8, (W - pad * 2) / per); fancyText(c, text, bx - 30 * k, Math.max(band + size, by - 500 * k - size * 0.6), size, colors, outline); return;
+    const size = Math.min(base * 0.8, (W - pad * 2) / per) * 0.75; fancyText(c, text, bx - 30 * k, Math.max(band + size, by - 500 * k - size * 0.6), size, colors, outline); return;
   }
+  best.size *= 0.75;                                           // a quarter smaller than the space allows
   const tw = best.size * per;
   const x = best.left ? best.x1 - tw / 2 : best.x0 + tw / 2;   // hug the head side of the free area
   const y = Math.max(band + best.size * 0.8, headY);
