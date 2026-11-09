@@ -4,6 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#2b1408">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script>
+/* in-app browsers (KakaoTalk etc.) keep serving an old copy: if the site has a newer build, reload it */
+(function () {
+  var BUILD = '1109173040';
+  if (!/^https?:$/.test(location.protocol)) return;
+  try {
+    fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
+      var m = t.match(/var BUILD = '([^']+)'/);
+      if (m && m[1] !== BUILD && m[1] !== '__BUILD__') {
+        var key = 'wf_reloaded_' + m[1];
+        if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1');
+        location.replace(location.pathname + '?v=' + m[1]);
+      }
+    }).catch(function () {});
+  } catch (e) {}
+})();
+</script>
+
 <title>왕푸 아저씨네 마라탕</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
