@@ -234,7 +234,7 @@ button{font-family:inherit}
 
   <div id="title" class="screen hidden">
     <div id="rankBox" class="rankbox pxbox">
-      <div class="rk-head"><span class="rk-t">🏆 TOP 5</span><span class="rk-mode" id="rkMode"></span></div>
+      <div class="rk-head"><span class="rk-t">🏆 TOP 3</span><span class="rk-mode" id="rkMode"></span></div>
       <div class="rk-list" id="rkList"></div>
     </div>
     <div id="titleBottom">
@@ -327,7 +327,7 @@ button{font-family:inherit}
       <div class="score-row"><span class="lbl">이번 점수</span><span class="big" id="resScore">0</span><span class="newbest hidden" id="newBest">NEW BEST!</span></div>
       <div class="best-row"><span class="lbl">내 최고점수</span><span class="mid" id="resBest">0</span><span class="bestnote" id="resBestNote"></span></div>
       <div class="rankbox inset res-rank">
-        <div class="rk-head"><span class="rk-t">🏆 전체 TOP 5</span><span class="rk-mode" id="resRkMode"></span></div>
+        <div class="rk-head"><span class="rk-t">🏆 전체 TOP 3</span><span class="rk-mode" id="resRkMode"></span></div>
         <div class="rk-list" id="resRkList"></div>
         <div class="save-row"><span id="saveMsg"></span><button id="saveRetry" class="pxbtn ko hidden">다시 시도</button></div>
       </div>
@@ -1744,30 +1744,25 @@ function drawSign(c, t) {
 }
 function signTop() { const { W, H } = L; return W < H ? Math.max(68, H * 0.04) : Math.max(14, H * 0.04); }
 function introTextBand() { const { W, H } = L; const sw = Math.min(W * 0.84, 560), sh = Math.min(sw * 0.26, H * 0.13); return signTop() + sh + 6; }
-/* put an onomatopoeia in the biggest free area around Wang Fu (left, right, or above him),
-   shrinking the text so it fits that area instead of overlapping him, the sign or the dialog */
-function onoInSpace(c, text, base, bx, by, s, band, colors, outline, allowTop) {
-  const { W, H } = L; const pad = 10;
-  const dlg = $('dialog'); const bottom = dlg && !dlg.classList.contains('hidden') ? dlg.getBoundingClientRect().top - 30 : H - 16;
-  const bl = bx - 200 * s, br = bx + 235 * s;
-  c.save(); c.font = `900 100px ${FONT}`; const k = (c.measureText(text).width + 40) / 100; c.restore();   // width per 1px of font size
-  const areas = [
-    { x0: pad, x1: bl, y0: band, y1: bottom },
-    { x0: br, x1: W - pad, y0: band, y1: bottom },
+/* put an onomatopoeia right beside Wang Fu's head, in the free space on the left of it
+   (the cleaver works on his right), or past the cleaver's reach on the right when that is
+   roomier; the text shrinks to fit instead of covering him, the sign or the dialog */
+function onoInSpace(c, text, base, bx, by, s, band, colors, outline) {
+  const { W } = L; const pad = 8; const k = s * 0.9;          // drawBoss draws sprite units at s*0.9
+  const headY = by - 400 * k;                                   // middle of his head
+  c.save(); c.font = `900 100px ${FONT}`; const per = (c.measureText(text).width + 30) / 100; c.restore();
+  const sides = [
+    { x0: pad, x1: bx - 118 * k, left: true },                  // behind his head
+    { x0: bx + 300 * k, x1: W - pad, left: false },             // beyond the spinning cleaver
   ];
-  // above his head (for the toss only the left half: the cleaver flies up on his right)
-  areas.push({ x0: pad, x1: allowTop ? W - pad : bx - 20 * s, y0: band, y1: by - 480 * s });
-  // the floor under his feet, when the dialog box isn't covering it
-  areas.push({ x0: pad, x1: W - pad, y0: by + 16 * s, y1: bottom, low: true });
   let best = null;
-  for (const a of areas) {
-    const w = a.x1 - a.x0, h = a.y1 - a.y0; if (w <= 0 || h <= 0) continue;
-    const size = Math.min(base, w / k, h / 1.6);
-    if (!best || size > best.size) best = { ...a, size };
+  for (const a of sides) { const w = a.x1 - a.x0; if (w <= 0) continue; const size = Math.min(base, w / per, 150 * k / 1.4); if (!best || size > best.size) best = { ...a, size }; }
+  if (!best || best.size < 11) {                                // no room beside the head: just above it, small
+    const size = Math.min(base * 0.8, (W - pad * 2) / per); fancyText(c, text, bx - 30 * k, Math.max(band + size, by - 500 * k - size * 0.6), size, colors, outline); return;
   }
-  if (!best || best.size < 12) return;   // nowhere free enough: skip rather than cover him
-  const x = (best.x0 + best.x1) / 2;
-  const y = best.low ? best.y0 + (best.y1 - best.y0) * 0.4 : clamp(by - 330 * s, best.y0 + best.size * 0.8, best.y1 - best.size * 0.8);
+  const tw = best.size * per;
+  const x = best.left ? best.x1 - tw / 2 : best.x0 + tw / 2;   // hug the head side of the free area
+  const y = Math.max(band + best.size * 0.8, headY);
   fancyText(c, text, x, y, best.size, colors, outline);
 }
 function drawIntro(t) {
@@ -1786,8 +1781,8 @@ function drawIntro(t) {
     if (f.word) { c.globalAlpha = 1 - Math.max(0, p - 0.6) / 0.4; fancyText(c, f.word, f.x, f.y - p * 20, wsz * 1.15, ['#ffffff', '#9ff0ff'], '#0a2a4a', { clamp: true, minY: band }); c.globalAlpha = 1; }
     else { c.globalAlpha = 1 - p; c.fillStyle = f.color; const s = snap(f.size); c.fillRect(snap(f.x - s), snap(f.y), s * 2, L.P); c.fillRect(snap(f.x), snap(f.y - s), L.P, s * 2); c.globalAlpha = 1; }
   }
-  if (B && B.action === 'spin') onoInSpace(c, '빙글빙글~', wsz, bx, by, lay.s, band, ['#ffffff', '#f6d34a'], '#5a1206', true);
-  if (B && B.action === 'toss' && B.actT > 0.28 && B.actT < 1.6) onoInSpace(c, '슈웅~!', wsz * 1.1, bx, by, lay.s, band, ['#ffffff', '#9ff0ff'], '#0a2a4a', false);
+  if (B && B.action === 'spin') onoInSpace(c, '빙글빙글~', wsz, bx, by, lay.s, band, ['#ffffff', '#f6d34a'], '#5a1206');
+  if (B && B.action === 'toss' && B.actT > 0.28 && B.actT < 1.6) onoInSpace(c, '슈웅~!', wsz * 1.1, bx, by, lay.s, band, ['#ffffff', '#9ff0ff'], '#0a2a4a');
   if (IN.icons.length) {
     const dlg = $('dialog').getBoundingClientRect(); const n = 7; const isz = Math.min(W / 8.2, 92); const y0 = dlg.top - isz * 0.72;
     IN.icons.forEach((ic, i) => {
@@ -1842,13 +1837,15 @@ Player.init();
 const withTimeout = (p, ms, label = 'timeout') => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej({ code: label }), ms))]);
 const sortRows = rows => rows.filter(r => r && typeof r.score === 'number' && r.pid)
   .sort((a, b) => b.score - a.score || (a.achievedAt || 0) - (b.achievedAt || 0));
+/* same nickname → only that name's best record stays on the board */
+const bestPerNick = rows => { const seen = new Set(); return rows.filter(r => { const k = nickKey(r.nick); if (seen.has(k)) return false; seen.add(k); return true; }); };
 const fbConfigured = () => !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId && FIREBASE_CONFIG.appId);
 
 /* ---- local test backend (only while Firebase isn't configured) ---- */
 const LocalBackend = {
   mode: 'local', label: '⚠ 테스트용 랭킹 · 이 기기에만 저장 (Firebase 연결 전)', readOnly: false,
   _all() { return LS.get('wf_test_ranking', {}); },
-  async top() { return sortRows(Object.values(this._all())).slice(0, 5); },
+  async top() { return bestPerNick(sortRows(Object.values(this._all()))).slice(0, 3); },
   async mine(pid) { return this._all()[pid] || null; },
   async submit(rec) {
     const all = this._all(); const cur = all[rec.pid];
@@ -1873,8 +1870,8 @@ async function FirebaseBackend(cfg) {
   return {
     mode: 'firebase', readOnly: false, label: '🌐 온라인 랭킹', uid,
     async top() {
-      const snap = await FS.getDocs(FS.query(FS.collection(db, 'scores'), FS.orderBy('score', 'desc'), FS.limit(25)));
-      return sortRows(snap.docs.map(toRec)).slice(0, 5);
+      const snap = await FS.getDocs(FS.query(FS.collection(db, 'scores'), FS.orderBy('score', 'desc'), FS.limit(60)));
+      return bestPerNick(sortRows(snap.docs.map(toRec))).slice(0, 3);
     },
     async mine() { const d = await FS.getDoc(ref(uid)); return d.exists() ? toRec(d) : null; },
     async submit(rec) {
