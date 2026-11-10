@@ -10,7 +10,7 @@
 <script>
 /* in-app browsers (KakaoTalk etc.) keep serving an old copy: if the site has a newer build, reload it */
 (function () {
-  var BUILD = '1109173721';
+  var BUILD = '1110111041';
   if (!/^https?:$/.test(location.protocol)) return;
   try {
     fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
@@ -358,7 +358,7 @@ button{font-family:inherit}
       <div class="score-row"><span class="lbl">이번 점수</span><span class="big" id="resScore">0</span><span class="newbest hidden" id="newBest">NEW BEST!</span></div>
       <div class="best-row"><span class="lbl">내 최고점수</span><span class="mid" id="resBest">0</span><span class="bestnote" id="resBestNote"></span></div>
       <div class="rankbox inset res-rank">
-        <div class="rk-head"><span class="rk-t">🏆 전체 TOP 3</span><span class="rk-mode" id="resRkMode"></span></div>
+        <div class="rk-head"><span class="rk-t">🏆 전체 TOP 5</span><span class="rk-mode" id="resRkMode"></span></div>
         <div class="rk-list" id="resRkList"></div>
         <div class="save-row"><span id="saveMsg"></span><button id="saveRetry" class="pxbtn ko hidden">다시 시도</button></div>
       </div>
@@ -1895,7 +1895,7 @@ const fbConfigured = () => !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectI
 const LocalBackend = {
   mode: 'local', label: '⚠ 테스트용 랭킹 · 이 기기에만 저장 (Firebase 연결 전)', readOnly: false,
   _all() { return LS.get('wf_test_ranking', {}); },
-  async top() { return bestPerNick(sortRows(Object.values(this._all()))).slice(0, 3); },
+  async top() { return bestPerNick(sortRows(Object.values(this._all()))).slice(0, 5); },
   async mine(pid) { return this._all()[pid] || null; },
   async submit(rec) {
     const all = this._all(); const cur = all[rec.pid];
@@ -1921,7 +1921,7 @@ async function FirebaseBackend(cfg) {
     mode: 'firebase', readOnly: false, label: '🌐 온라인 랭킹', uid,
     async top() {
       const snap = await FS.getDocs(FS.query(FS.collection(db, 'scores'), FS.orderBy('score', 'desc'), FS.limit(60)));
-      return bestPerNick(sortRows(snap.docs.map(toRec))).slice(0, 3);
+      return bestPerNick(sortRows(snap.docs.map(toRec))).slice(0, 5);
     },
     async mine() { const d = await FS.getDoc(ref(uid)); return d.exists() ? toRec(d) : null; },
     async submit(rec) {
@@ -2011,11 +2011,11 @@ const Rank = {
 };
 
 const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-function rankHTML() {
+function rankHTML(n = 5) {
   if (Rank.state === 'loading' && !Rank.top.length) return '<div class="rk-empty">랭킹 불러오는 중…</div>';
   if (Rank.state === 'error' && !Rank.top.length) return '<div class="rk-empty">랭킹을 불러오지 못했어요<br><button class="linkbtn rk-reload">다시 불러오기</button></div>';
   if (!Rank.top.length) return '<div class="rk-empty">아직 기록이 없어요.<br>첫 번째 기록의 주인공이 되어 보세요!</div>';
-  return Rank.top.map((r, i) => `<div class="rk r${i + 1}${r.pid === Player.pid ? ' me' : ''}"><span class="no">${i + 1}</span><span class="nm">${escapeHtml(r.nick)}</span><span class="sc">${r.score}</span></div>`).join('');
+  return Rank.top.slice(0, n).map((r, i) => `<div class="rk r${i + 1}${r.pid === Player.pid ? ' me' : ''}"><span class="no">${i + 1}</span><span class="nm">${escapeHtml(r.nick)}</span><span class="sc">${r.score}</span></div>`).join('');
 }
 /* why Firebase can't connect here, in plain words */
 function offlineReason() {
@@ -2026,10 +2026,10 @@ function offlineReason() {
   return '⚠ 온라인 랭킹 연결 실패' + (Rank.lastErr ? ` (${String(Rank.lastErr).slice(0, 40)})` : '');
 }
 function renderRanks() {
-  const html = rankHTML(); const be = Rank.be;
+  const be = Rank.be;
   const label = be ? be.label : (fbConfigured() ? offlineReason() : '');
   for (const [listId, modeId] of [['rkList', 'rkMode'], ['resRkList', 'resRkMode']]) {
-    const l = $(listId), m = $(modeId); if (!l) continue; l.innerHTML = html;
+    const l = $(listId), m = $(modeId); if (!l) continue; l.innerHTML = rankHTML(listId === 'rkList' ? 3 : 5);   // title shows 3, results show 5
     if (m) { m.textContent = label; m.className = 'rk-mode ' + (be && be.mode === 'firebase' ? 'online' : 'test'); }
   }
   document.querySelectorAll('.rk-reload').forEach(b => b.onclick = () => { if (Rank.be) Rank.refresh(); else Rank.init(); });
