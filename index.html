@@ -10,7 +10,7 @@
 <script>
 /* in-app browsers (KakaoTalk etc.) keep serving an old copy: if the site has a newer build, reload it */
 (function () {
-  var BUILD = '1110111243';
+  var BUILD = '1110151206';
   if (!/^https?:$/.test(location.protocol)) return;
   try {
     fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
@@ -1911,8 +1911,14 @@ async function FirebaseBackend(cfg) {
   const mods = window.__FB_MODULES || await Promise.all(['firebase-app.js', 'firebase-auth.js', 'firebase-firestore.js'].map(f => import(FIREBASE_SDK + f)));
   const [APP, AUTH, FS] = mods;
   const app = APP.initializeApp(cfg);
-  const auth = AUTH.getAuth(app);
-  const cred = await AUTH.signInAnonymously(auth);           // persisted by Firebase in this browser
+  // in-app browsers (Slack, Instagram, KakaoTalk…) may block IndexedDB or localStorage:
+  // fall back step by step down to memory, so signing in never fails just because of storage
+  let auth;
+  try { auth = AUTH.initializeAuth ? AUTH.initializeAuth(app, { persistence: [AUTH.indexedDBLocalPersistence, AUTH.browserLocalPersistence, AUTH.inMemoryPersistence].filter(Boolean) }) : AUTH.getAuth(app); }
+  catch (e) { auth = AUTH.getAuth(app); }
+  let cred;
+  try { cred = await AUTH.signInAnonymously(auth); }
+  catch (e) { if (AUTH.setPersistence && AUTH.inMemoryPersistence) { await AUTH.setPersistence(auth, AUTH.inMemoryPersistence); cred = await AUTH.signInAnonymously(auth); } else throw e; }
   const uid = cred.user.uid;
   const db = FS.getFirestore(app);
   const ref = id => FS.doc(db, 'scores', id);
@@ -1924,6 +1930,12 @@ async function FirebaseBackend(cfg) {
       return bestPerNick(sortRows(snap.docs.map(toRec))).slice(0, 5);
     },
     async mine() { const d = await FS.getDoc(ref(uid)); return d.exists() ? toRec(d) : null; },
+    /* the best record under this nickname from any device (Instagram / Slack / Kakao browsers each get their own id) */
+    async nickBest(nick) {
+      if (!FS.where) return null;
+      const snap = await FS.getDocs(FS.query(FS.collection(db, 'scores'), FS.where('nick', '==', nick), FS.limit(30)));
+      const rows = sortRows(snap.docs.map(toRec)); return rows[0] || null;
+    },
     async submit(rec) {
       return FS.runTransaction(db, async tx => {
         const r = ref(uid); const d = await tx.get(r);
@@ -1973,7 +1985,7 @@ const Rank = {
   async submit(runId, score) {
     const S = this.sub;
     if (S.runId === runId && (S.status === 'saving' || S.status === 'saved' || S.status === 'notbest')) return;
-    S.runId = runId; S.score = score; S.result = null;
+    S.runId = runId; S.score = score; S.result = null; S.nickBest = null; S.err = null;
     if (score <= 0) { S.status = 'skipped'; renderSave(); return; }
     S.status = 'saving'; renderSave();
     await this.init();
@@ -1986,11 +1998,12 @@ const Rank = {
       if (S.runId !== runId) return;
       S.result = res; S.status = res.updated ? 'saved' : 'notbest';
       LS.set('wf_pending', null);
+      try { S.nickBest = this.be.nickBest ? await withTimeout(this.be.nickBest(rec.nick), 6000) : null; } catch (e) { S.nickBest = null; }
       await this.refresh();
     } catch (e) {
       console.error('기록 저장 실패', e);
       if (S.runId !== runId) return;
-      S.status = 'failed';
+      S.status = 'failed'; S.err = (e && (e.code || e.message)) || String(e);
     }
     renderSave(); renderRanks();
   },
@@ -2038,15 +2051,16 @@ function renderSave() {
   const S = Rank.sub, el = $('saveMsg'), btn = $('saveRetry'); if (!el) return;
   btn.classList.toggle('hidden', S.status !== 'failed'); btn.disabled = S.status === 'saving';
   const local = Rank.be && Rank.be.mode === 'local';
+  const nb = S.nickBest; const other = nb && nb.pid !== Player.pid && nb.score > S.score && (!S.result || nb.score > S.result.best) ? nb : null;   // same nick, saved from another app/browser
   const msg = {
     idle: ['', ''], saving: ['info', '기록 저장 중…'],
-    saved: ['ok', local ? '✔ 테스트 랭킹에 기록됐어요 (이 기기에만 저장)' : '✔ 최고기록이 온라인 랭킹에 저장됐어요!'],
-    notbest: ['info', `내 최고점수(${S.result ? S.result.best : 0})를 넘지 못해 랭킹 기록은 그대로예요`],
-    failed: ['bad', '⚠ 기록 저장에 실패했어요. 결과는 그대로 남아 있어요.'],
+    saved: ['ok', local ? '✔ 테스트 랭킹에 기록됐어요 (이 기기에만 저장)' : (other ? `✔ 저장됐어요! 다만 '${Player.nick}' 닉네임의 더 높은 기록(${other.score}점)이 랭킹에 대신 표시돼요` : '✔ 최고기록이 온라인 랭킹에 저장됐어요!')],
+    notbest: ['info', other ? `'${Player.nick}' 닉네임의 최고기록(${other.score}점)을 넘지 못해 랭킹은 그대로예요` : `내 최고점수(${S.result ? S.result.best : 0})를 넘지 못해 랭킹 기록은 그대로예요`],
+    failed: ['bad', '⚠ 기록 저장에 실패했어요. 결과는 그대로 남아 있어요.' + (S.err ? ` (${String(S.err).slice(0, 30)})` : '')],
     skipped: ['info', '0점은 랭킹에 저장되지 않아요'],
   }[S.status] || ['', ''];
   el.className = msg[0]; el.textContent = msg[1];
-  if (S.status === 'saved' || S.status === 'notbest') { const online = Rank.mine ? Rank.mine.score : 0; $('resBest').textContent = Math.max(G.best, online, G.score); }
+  if (S.status === 'saved' || S.status === 'notbest') { const online = Rank.mine ? Rank.mine.score : 0; $('resBest').textContent = Math.max(G.best, online, G.score, other ? other.score : 0); }
 }
 
 /* ---- nickname dialog ---- */
