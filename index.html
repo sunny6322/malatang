@@ -10,7 +10,7 @@
 <script>
 /* in-app browsers (KakaoTalk etc.) keep serving an old copy: if the site has a newer build, reload it */
 (function () {
-  var BUILD = '1110111041';
+  var BUILD = '1110111243';
   if (!/^https?:$/.test(location.protocol)) return;
   try {
     fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
@@ -2203,8 +2203,10 @@ function buildHearts(hit) {
   for (let i = 0; i < MAX_HEARTS; i++) { const d = document.createElement('div'); d.innerHTML = HEART_SVG; const s = d.firstChild; if (i >= G.hearts) s.classList.add('lost'); if (hit && i === G.hearts) s.classList.add('hit'); el.appendChild(s); }
 }
 let hudScore = -1;
+/* BEST at the top of the game = the #1 score on the ranking (falls back to my own best offline) */
+function topScore() { const t = (typeof Rank !== 'undefined' && Rank.top && Rank.top[0]) ? Rank.top[0].score : 0; return t || G.best; }
 function updateHUD(force) {
-  $('score').textContent = G.score; $('coins').textContent = G.coins; $('best').textContent = Math.max(G.best, G.score);
+  $('score').textContent = G.score; $('coins').textContent = G.coins; $('best').textContent = Math.max(topScore(), G.score);
   const sec = Math.ceil(G.time); $('time').textContent = sec; $('timerBox').classList.toggle('hurry', sec <= 10 && state === 'play');
   $('gaugeFill').style.width = (G.potFill / POT_MAX * 100) + '%'; $('bowlsV').textContent = `완성 ${G.bowls}그릇`;
 }
